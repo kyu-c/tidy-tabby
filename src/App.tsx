@@ -11,7 +11,7 @@ function App() {
   return (
     <ThemeProvider>
       <div className="flex w-[600px] h-[500px] p-3 bg-slate-100 dark:bg-transparent">
-        <div className="flex flex-col items-center w-full h-full rounded-xl p-3 bg-white dark:bg-transparent gap-3">
+        <div className="flex flex-col items-center w-full h-full rounded-xl p-3 bg-white dark:bg-transparent gap-2">
           <div className="flex justify-between w-full">
             <img src={tidyTabby} alt="TidyTabby" className="w-8 h-8" />
             <div className="text-lg font-bold">TidyTabby</div>
