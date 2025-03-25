@@ -4,7 +4,8 @@
 
 # TidyTabby
 
-A Chrome extension that automatically closes inactive tabs after a configurable time period.
+TidyTabby is a Chrome extension that helps you stay focused by automatically closing tabs that have been inactive for a set amount of time.
+
 
 ## Features
 
