@@ -61,10 +61,14 @@ export class TabManager {
 
       const lastAccessedMs = this.lastAccessedMsById.get(tabId);
       if (lastAccessedMs === undefined) {
-        console.debug("Tab has no last accessed time, skipping");
+        console.debug("Tab has no last accessed time. Updating...");
         this.updateLastAccessed(tabId);
         continue;
       }
+      const minutesSinceLastAccessed = (now - lastAccessedMs) / 60000;
+      console.debug(
+        `Tab ${tabId} has been inactive for ${minutesSinceLastAccessed}m`,
+      );
 
       if (now - lastAccessedMs > timeoutMs) {
         chrome.tabs.remove(tabId);
