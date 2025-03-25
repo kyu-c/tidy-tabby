@@ -43,6 +43,9 @@ export class TabManager {
       storageKeys.timeoutMinutes,
     );
     const timeoutMs = timeoutMinutes * 60 * 1000;
+    console.debug(
+      `[TabManager] Cleaning up inactive tabs with timeout ${timeoutMinutes}m`,
+    );
     const now = Date.now();
 
     const allTabs = await chrome.tabs.query({});
@@ -59,7 +62,7 @@ export class TabManager {
         continue;
       }
 
-      const lastAccessedMs = this.lastAccessedMsById.get(tabId);
+      const lastAccessedMs = tab.lastAccessed || this.lastAccessedMsById.get(tabId);
       if (lastAccessedMs === undefined) {
         console.debug("Tab has no last accessed time. Updating...");
         this.updateLastAccessed(tabId);
