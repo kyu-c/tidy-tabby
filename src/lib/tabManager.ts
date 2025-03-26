@@ -56,6 +56,17 @@ export class TabManager {
         console.debug("Tab is pinned, skipping");
         continue;
       }
+
+      if (tab.active) {
+        console.debug("Tab is active, skipping");
+        continue;
+      }
+
+      if (tab.audible) {
+        console.debug("Tab is playing audio, skipping");
+        continue;
+      }
+
       const tabId = tab.id;
       if (!tabId) {
         console.debug("Tab has no id, skipping");
@@ -83,29 +94,24 @@ export class TabManager {
 
   /**
    * Close all tabs excluding:
-   * 1. Current tab
+   * 1. Active tab
    * 2. Pinned tabs (browser feature)
-   * 3. Locked tabs (TidyTabby feature)
+   * 3. Audible tabs
+   * 4. Locked tabs (TidyTabby feature)
    */
   public async closeAllTabs() {
-    const currentTabIds = (
-      await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      })
-    )
-      .map((tab) => tab.id)
-      .filter((id) => id !== undefined);
-
     const allTabs = await chrome.tabs.query({});
     for (const tab of allTabs) {
+      if (tab.active) {
+        continue;
+      }
       if (tab.pinned) {
         continue;
       }
-      if (tab.id === undefined) {
+      if (tab.audible) {
         continue;
       }
-      if (currentTabIds.includes(tab.id)) {
+      if (tab.id === undefined) {
         continue;
       }
       if (this.lockedTabs.has(tab.id)) {
