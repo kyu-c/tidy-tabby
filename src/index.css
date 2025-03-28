@@ -103,6 +103,17 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  @font-face {
+    font-family: "DarumadropOne";
+    src: url("./assets/fonts/DarumadropOne-Regular.ttf") format("truetype");
+  }
+}
+
+@layer utilities {
+  .font-darumadropone {
+    font-family: "DarumadropOne", sans-serif;
+  }
 }
 
 @theme {

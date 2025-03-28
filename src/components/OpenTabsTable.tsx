@@ -129,7 +129,7 @@ export default function OpenTabsTable() {
 
   return (
     <div className="container mx-auto">
-      <h1 className="text-xl font-bold mb-6">Open Tabs</h1>
+      <h1 className="text-xl font-bold mb-4 ml-2">Open Tabs</h1>
       <div className="rounded-md border">
         <Table className="w-full">
           <TableHeader>
