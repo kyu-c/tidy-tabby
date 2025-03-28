@@ -53,7 +53,7 @@ function PinIconWithToolTip() {
           <PinIcon className="w-4 h-4" />
         </TooltipTrigger>
         <TooltipContent>
-          <p>The tab is pinned.</p>
+          <p>The tab is pinned on your browser.</p>
           <p>It will be excluded from the cleanup.</p>
         </TooltipContent>
       </Tooltip>
@@ -66,7 +66,7 @@ function MusicIconWithToolTip() {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <MusicIcon className="w-4 h-4" />
+          <MusicIcon className="w-4 h-4 animate-bounce" />
         </TooltipTrigger>
         <TooltipContent>
           <p>The tab is currently playing audio.</p>
