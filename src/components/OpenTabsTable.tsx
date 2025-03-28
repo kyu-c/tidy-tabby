@@ -16,18 +16,65 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, File, LockIcon } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  File,
+  LockIcon,
+  MusicIcon,
+  PinIcon,
+} from "lucide-react";
 import {
   GetLockedTabsMessage,
   LockTabMessage,
   UnlockTabMessage,
 } from "@/lib/chrome";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 export interface Tab {
   id: number;
   title: string;
   favicon: string | undefined;
   locked: boolean;
+  pinned: boolean;
+  audible: boolean;
+}
+
+function PinIconWithToolTip() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PinIcon className="w-4 h-4" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>The tab is pinned.</p>
+          <p>It will be excluded from the cleanup.</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function MusicIconWithToolTip() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <MusicIcon className="w-4 h-4" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>The tab is currently playing audio.</p>
+          <p>It will be excluded from the cleanup.</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 async function getTabs(): Promise<Tab[]> {
@@ -43,6 +90,8 @@ async function getTabs(): Promise<Tab[]> {
       title: tab.title ?? "No Title",
       favicon: tab.favIconUrl,
       locked: lockedTabs.lockedTabs.includes(tab.id!),
+      pinned: tab.pinned,
+      audible: tab.audible ?? false,
     }));
 }
 
@@ -107,9 +156,15 @@ export default function OpenTabsTable() {
               <File className="h-5 w-5" />
             )}
           </div>
-          <span className="truncate max-w-[400px]" title={row.original.title}>
-            {row.original.title}
-          </span>
+          <div className="flex justify-between w-full">
+            <span className="truncate max-w-[400px]" title={row.original.title}>
+              {row.original.title}
+            </span>
+            <div className="flex gap-1 mr-1">
+              {row.original.pinned && <PinIconWithToolTip />}
+              {row.original.audible && <MusicIconWithToolTip />}
+            </div>
+          </div>
         </div>
       ),
     },
