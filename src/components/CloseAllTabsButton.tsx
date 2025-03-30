@@ -20,10 +20,7 @@ export default function CloseAllTabsButton({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            className={cn(
-              "animate-none",
-              isVacuuming && "animate-vacuum"
-            )}
+            className={cn("animate-none", isVacuuming && "animate-vacuum")}
             onClick={() => {
               setIsVacuuming(true);
               onClick();

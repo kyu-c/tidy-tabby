@@ -73,7 +73,8 @@ export class TabManager {
         continue;
       }
 
-      const lastAccessedMs = tab.lastAccessed || this.lastAccessedMsById.get(tabId);
+      const lastAccessedMs =
+        tab.lastAccessed || this.lastAccessedMsById.get(tabId);
       if (lastAccessedMs === undefined) {
         console.debug("Tab has no last accessed time. Updating...");
         this.updateLastAccessed(tabId);

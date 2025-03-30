@@ -1,10 +1,15 @@
 export const storageKeys = {
   timeoutMinutes: "timeoutMinutes",
   lockedTabs: "lockedTabs",
+  autoClose: "autoClose",
 };
 
 export type CloseAllTabsMessage = {
   kind: "closeAllTabs";
+};
+
+export type CleanupInactiveTabsMessage = {
+  kind: "cleanupInactiveTabs";
 };
 
 export type GetLockedTabsMessage = {
@@ -25,11 +30,18 @@ export type UnlockTabMessage = {
   tabId: number;
 };
 
+export type AutoCloseMessage = {
+  kind: "autoClose";
+  autoClose: boolean;
+};
+
 export type Message =
   | CloseAllTabsMessage
+  | CleanupInactiveTabsMessage
   | GetLockedTabsMessage
   | LockTabMessage
-  | UnlockTabMessage;
+  | UnlockTabMessage
+  | AutoCloseMessage;
 
 export function isKnownMessage(message: unknown): message is Message {
   return typeof message === "object" && message !== null && "kind" in message;

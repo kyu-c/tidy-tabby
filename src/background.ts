@@ -1,17 +1,54 @@
-import { GetLockedTabsResponse, isKnownMessage } from "./lib/chrome";
+import {
+  GetLockedTabsResponse,
+  isKnownMessage,
+  storageKeys,
+} from "./lib/chrome";
 import { TabManager } from "./lib/tabManager";
 
 const TAB_CLEANUP_ALARM_NAME = "tabCleanupAlarm";
 const tabManager = new TabManager();
 
-chrome.alarms.create(TAB_CLEANUP_ALARM_NAME, {
-  periodInMinutes: 1,
-});
+function createAutoCloseAlarm() {
+  chrome.alarms.clear(TAB_CLEANUP_ALARM_NAME);
+  console.debug("Creating auto close alarm");
+  chrome.alarms.create(TAB_CLEANUP_ALARM_NAME, {
+    periodInMinutes: 1,
+  });
+}
+
+function cancelAutoCloseAlarm() {
+  console.debug("Cancelling auto close alarm");
+  chrome.alarms.clear(TAB_CLEANUP_ALARM_NAME);
+}
+
+async function setupAutoCloseAlarm() {
+  const result = await chrome.storage.local.get(storageKeys.autoClose);
+  if (result[storageKeys.autoClose] === true) {
+    createAutoCloseAlarm();
+  } else {
+    cancelAutoCloseAlarm();
+  }
+}
+
+setupAutoCloseAlarm();
 
 chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
   if (alarm.name === TAB_CLEANUP_ALARM_NAME) {
     console.debug("Tab cleanup alarm triggered");
     tabManager.cleanupInactiveTabs();
+  }
+});
+
+chrome.storage.local.onChanged.addListener((changes) => {
+  const autoClose: boolean | undefined =
+    changes[storageKeys.autoClose]?.newValue;
+  if (autoClose === undefined) {
+    return;
+  }
+  if (autoClose) {
+    createAutoCloseAlarm();
+  } else {
+    cancelAutoCloseAlarm();
   }
 });
 
@@ -44,6 +81,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     tabManager.closeAllTabs();
     sendResponse();
   }
+  if (message.kind === "cleanupInactiveTabs") {
+    tabManager.cleanupInactiveTabs();
+    sendResponse();
+  }
   if (message.kind === "getLockedTabs") {
     sendResponse({
       lockedTabs: tabManager.getLockedTabs(),
@@ -56,5 +97,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.kind === "unlockTab") {
     tabManager.updateLocked(message.tabId, false);
     sendResponse();
+  }
+  if (message.kind === "autoClose") {
+    if (message.autoClose) {
+      createAutoCloseAlarm();
+    } else {
+      cancelAutoCloseAlarm();
+    }
   }
 });
