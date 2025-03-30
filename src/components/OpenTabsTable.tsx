@@ -118,6 +118,9 @@ export default function OpenTabsTable() {
       ),
     );
   };
+  const switchTab = (id: number) => {
+    chrome.tabs.update(id, { active: true });
+  };
 
   const columns: ColumnDef<Tab>[] = [
     {
@@ -157,9 +160,12 @@ export default function OpenTabsTable() {
             )}
           </div>
           <div className="flex justify-between w-full">
-            <span className="truncate max-w-[400px]" title={row.original.title}>
+            <button
+              className="truncate max-w-[400px] hover:underline block"
+              onClick={() => switchTab(row.original.id)}
+            >
               {row.original.title}
-            </span>
+            </button>
             <div className="flex gap-1 mr-1">
               {row.original.pinned && <PinIconWithToolTip />}
               {row.original.audible && <MusicIconWithToolTip />}
