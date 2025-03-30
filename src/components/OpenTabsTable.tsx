@@ -23,6 +23,7 @@ import {
   LockIcon,
   MusicIcon,
   PinIcon,
+  XIcon,
 } from "lucide-react";
 import {
   GetLockedTabsMessage,
@@ -118,6 +119,11 @@ export default function OpenTabsTable() {
       ),
     );
   };
+  const closeTab = (id: number) => {
+    chrome.tabs.remove(id);
+    setTabs(tabs.filter((tab) => tab.id !== id));
+  };
+
   const switchTab = (id: number) => {
     chrome.tabs.update(id, { active: true });
   };
@@ -147,7 +153,7 @@ export default function OpenTabsTable() {
       accessorKey: "title",
       size: 450,
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 group">
           <div className="relative h-5 w-5">
             {row.original.favicon ? (
               <img
@@ -167,8 +173,16 @@ export default function OpenTabsTable() {
               {row.original.title}
             </button>
             <div className="flex gap-1 mr-1">
-              {row.original.pinned && <PinIconWithToolTip />}
               {row.original.audible && <MusicIconWithToolTip />}
+              {row.original.pinned && <PinIconWithToolTip />}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => closeTab(row.original.id)}
+                className="invisible group-hover:visible size-5"
+              >
+                <XIcon className="w-5 h-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -186,6 +200,7 @@ export default function OpenTabsTable() {
         pageSize: 5,
       },
     },
+    autoResetPageIndex: false,
   });
 
   return (
