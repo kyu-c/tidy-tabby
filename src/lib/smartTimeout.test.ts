@@ -86,43 +86,53 @@ describe("getEffectiveTimeoutMs", () => {
     expect(timeout).toEqual(BASE_TIMEOUT_MS);
   });
 
-  it("increases timeout for single recent access", () => {
+  it("returns base timeout for single access (no bonus for one-time visits)", () => {
     const now = Date.now();
     const timeout = getEffectiveTimeoutMs([now], BASE_TIMEOUT_MS, now);
 
-    // multiplier = 1 + log2(1 + 1) = 1 + 1 = 2
-    expect(timeout).toBeCloseTo(BASE_TIMEOUT_MS * 2, 0);
+    // adjustedCount = max(0, 1 - 1) = 0, multiplier = 1 + log2(1) = 1
+    expect(timeout).toEqual(BASE_TIMEOUT_MS);
+  });
+
+  it("starts extending timeout only after second access", () => {
+    const now = Date.now();
+
+    const timeout1 = getEffectiveTimeoutMs([now], BASE_TIMEOUT_MS, now);
+    const timeout2 = getEffectiveTimeoutMs([now, now], BASE_TIMEOUT_MS, now);
+
+    expect(timeout1).toEqual(BASE_TIMEOUT_MS);
+    expect(timeout2).toBeGreaterThan(BASE_TIMEOUT_MS);
   });
 
   it("increases timeout with diminishing returns (logarithmic)", () => {
     const now = Date.now();
 
-    // 1 access: multiplier = 1 + log2(2) = 2
-    const timeout1 = getEffectiveTimeoutMs([now], BASE_TIMEOUT_MS, now);
+    // 2 accesses: adjustedCount = 1, multiplier = 1 + log2(2) = 2
+    const timeout2 = getEffectiveTimeoutMs([now, now], BASE_TIMEOUT_MS, now);
 
-    // 3 accesses: multiplier = 1 + log2(4) = 3
-    const timeout3 = getEffectiveTimeoutMs(
-      [now, now, now],
+    // 4 accesses: adjustedCount = 3, multiplier = 1 + log2(4) = 3
+    const timeout4 = getEffectiveTimeoutMs(
+      Array(4).fill(now),
       BASE_TIMEOUT_MS,
       now,
     );
 
-    // 7 accesses: multiplier = 1 + log2(8) = 4
-    const timeout7 = getEffectiveTimeoutMs(
-      Array(7).fill(now),
+    // 8 accesses: adjustedCount = 7, multiplier = 1 + log2(8) = 4
+    const timeout8 = getEffectiveTimeoutMs(
+      Array(8).fill(now),
       BASE_TIMEOUT_MS,
       now,
     );
 
     // Verify logarithmic scaling
-    expect(timeout1).toBeCloseTo(BASE_TIMEOUT_MS * 2, 0);
-    expect(timeout3).toBeCloseTo(BASE_TIMEOUT_MS * 3, 0);
-    expect(timeout7).toBeCloseTo(BASE_TIMEOUT_MS * 4, 0);
+    expect(timeout2).toBeCloseTo(BASE_TIMEOUT_MS * 2, 0);
+    expect(timeout4).toBeCloseTo(BASE_TIMEOUT_MS * 3, 0);
+    expect(timeout8).toBeCloseTo(BASE_TIMEOUT_MS * 4, 0);
 
     // Verify diminishing returns: each doubling of accesses adds same amount
-    const diff1to3 = timeout3 - timeout1;
-    const diff3to7 = timeout7 - timeout3;
-    expect(diff1to3).toBeCloseTo(diff3to7, 0);
+    const diff2to4 = timeout4 - timeout2;
+    const diff4to8 = timeout8 - timeout4;
+    expect(diff2to4).toBeCloseTo(diff4to8, 0);
   });
 
   it("caps timeout at MAX_TIMEOUT_MS (30 days)", () => {
@@ -176,9 +186,9 @@ describe("getEffectiveTimeoutMs", () => {
     const timestamps = Array(10).fill(yesterday);
     const timeout = getEffectiveTimeoutMs(timestamps, BASE_TIMEOUT_MS, now);
 
-    // Should still have significant timeout extension
-    expect(timeout).toBeGreaterThan(BASE_TIMEOUT_MS * 2);
-    expect(timeout).toBeLessThan(BASE_TIMEOUT_MS * 5);
+    // Should still have significant timeout extension (adjustedCount ~= 6 after decay)
+    expect(timeout).toBeGreaterThan(BASE_TIMEOUT_MS * 1.5);
+    expect(timeout).toBeLessThan(BASE_TIMEOUT_MS * 4);
   });
 });
 

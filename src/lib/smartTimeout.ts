@@ -29,7 +29,8 @@ export function getEffectiveTimeoutMs(
   }
 
   const weightedCount = getWeightedAccessCount(timestamps, now);
-  const multiplier = 1 + Math.log2(1 + weightedCount);
+  const adjustedCount = Math.max(0, weightedCount - 1);
+  const multiplier = 1 + Math.log2(1 + adjustedCount);
   const effectiveTimeout = baseTimeoutMs * multiplier;
 
   return Math.min(effectiveTimeout, MAX_TIMEOUT_MS);
