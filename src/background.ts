@@ -56,6 +56,9 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const { tabId } = activeInfo;
   console.debug("Tab activated:", tabId);
   tabManager.updateLastAccessed(tabId);
+
+  const tab = await chrome.tabs.get(tabId);
+  tabManager.recordAccess(tab.url);
 });
 
 chrome.tabs.onCreated.addListener(async (tab) => {
