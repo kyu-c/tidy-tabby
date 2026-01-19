@@ -21,6 +21,7 @@ import {
 export default function Settings() {
   const [open, setOpen] = useState(false);
   const [autoClose, setAutoClose] = useState(false);
+  const [smartTimeout, setSmartTimeout] = useState(false);
   const [hours, setHours] = useState(3);
   const [minutes, setMinutes] = useState(0);
 
@@ -43,6 +44,12 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
+    chrome.storage.local.get(storageKeys.smartTimeout, (result) => {
+      setSmartTimeout(result[storageKeys.smartTimeout] as boolean);
+    });
+  }, []);
+
+  useEffect(() => {
     const totalMinutes = hours * 60 + minutes;
     chrome.storage.local.set({ [storageKeys.timeoutMinutes]: totalMinutes });
   }, [hours, minutes]);
@@ -50,6 +57,10 @@ export default function Settings() {
   useEffect(() => {
     chrome.storage.local.set({ [storageKeys.autoClose]: autoClose });
   }, [autoClose]);
+
+  useEffect(() => {
+    chrome.storage.local.set({ [storageKeys.smartTimeout]: smartTimeout });
+  }, [smartTimeout]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -79,6 +90,23 @@ export default function Settings() {
             <Switch
               checked={autoClose}
               onCheckedChange={(checked) => setAutoClose(checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label>Smart Timeout</Label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Extend timeout for frequently</p>
+                  <p>accessed tabs.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Switch
+              checked={smartTimeout}
+              onCheckedChange={(checked) => setSmartTimeout(checked)}
             />
           </div>
           <div className="space-y-2">

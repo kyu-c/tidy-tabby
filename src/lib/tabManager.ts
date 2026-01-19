@@ -1,15 +1,60 @@
 import { storageKeys } from "./chrome";
+import {
+  getEffectiveTimeoutMs,
+  MAX_HISTORY_ENTRIES,
+  pruneAccessHistory,
+  pruneTimestamps,
+} from "./smartTimeout";
 
 export type TabId = number;
+
+type AccessHistoryRecord = Record<string, number[]>;
 
 export class TabManager {
   private lastAccessedMsById: Map<TabId, number> = new Map();
   private lockedTabs: Set<TabId> = new Set();
+  private accessHistory: Map<string, number[]> = new Map();
 
   constructor() {
-    chrome.storage.local.get(storageKeys.lockedTabs).then((result) => {
-      this.lockedTabs = new Set(result.lockedTabs);
-    });
+    chrome.storage.local
+      .get([storageKeys.lockedTabs, storageKeys.accessHistory])
+      .then((result) => {
+        this.lockedTabs = new Set(result[storageKeys.lockedTabs]);
+
+        const history: AccessHistoryRecord | undefined =
+          result[storageKeys.accessHistory];
+        if (history) {
+          this.accessHistory = new Map(Object.entries(history));
+        }
+      });
+  }
+
+  private persistAccessHistory() {
+    const historyObj: AccessHistoryRecord = Object.fromEntries(
+      this.accessHistory,
+    );
+    chrome.storage.local.set({ [storageKeys.accessHistory]: historyObj });
+  }
+
+  public recordAccess(url: string | undefined) {
+    if (!url) return;
+
+    const now = Date.now();
+    const timestamps = this.accessHistory.get(url) || [];
+    const validTimestamps = pruneTimestamps(timestamps, now);
+    validTimestamps.push(now);
+
+    this.accessHistory.set(url, validTimestamps);
+
+    if (this.accessHistory.size > MAX_HISTORY_ENTRIES) {
+      this.accessHistory = pruneAccessHistory(this.accessHistory, now);
+    }
+
+    this.persistAccessHistory();
+  }
+
+  public getEffectiveTimeout(url: string, baseTimeoutMs: number): number {
+    return getEffectiveTimeoutMs(this.accessHistory.get(url), baseTimeoutMs);
   }
 
   public getLockedTabs(): TabId[] {
@@ -39,12 +84,15 @@ export class TabManager {
   }
 
   public async cleanupInactiveTabs() {
-    const { timeoutMinutes } = await chrome.storage.local.get(
+    const result = await chrome.storage.local.get([
       storageKeys.timeoutMinutes,
-    );
-    const timeoutMs = timeoutMinutes * 60 * 1000;
+      storageKeys.smartTimeout,
+    ]);
+    const baseTimeoutMs = result[storageKeys.timeoutMinutes] * 60 * 1000;
+    const smartTimeoutEnabled = result[storageKeys.smartTimeout] === true;
+
     console.debug(
-      `[TabManager] Cleaning up inactive tabs with timeout ${timeoutMinutes}m`,
+      `[TabManager] Cleaning up inactive tabs with base timeout ${result[storageKeys.timeoutMinutes]}m, smartTimeout=${smartTimeoutEnabled}`,
     );
     const now = Date.now();
 
@@ -80,17 +128,21 @@ export class TabManager {
         this.updateLastAccessed(tabId);
         continue;
       }
+
+      const effectiveTimeoutMs = smartTimeoutEnabled
+        ? this.getEffectiveTimeout(tab.url || "", baseTimeoutMs)
+        : baseTimeoutMs;
+
       const minutesSinceLastAccessed = (now - lastAccessedMs) / 60000;
+      const effectiveTimeoutMinutes = effectiveTimeoutMs / 60000;
       console.debug(
-        `Tab ${tabId} has been inactive for ${minutesSinceLastAccessed}m`,
+        `Tab ${tabId} has been inactive for ${minutesSinceLastAccessed.toFixed(1)}m (effective timeout: ${effectiveTimeoutMinutes.toFixed(1)}m)`,
       );
 
-      if (now - lastAccessedMs > timeoutMs) {
+      if (now - lastAccessedMs > effectiveTimeoutMs) {
         chrome.tabs.remove(tabId);
       }
     }
-
-    // TODO: clean up any tabs that no longer exist.
   }
 
   /**
