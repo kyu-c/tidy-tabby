@@ -62,17 +62,21 @@ export class TabManager {
   public async restoreLockedTabs() {
     const result = await chrome.storage.local.get(storageKeys.lockedTabUrls);
     const lockedUrls: string[] = result[storageKeys.lockedTabUrls] || [];
-    const urlsToMatch = [...lockedUrls];
+
+    const urlCounts = new Map<string, number>();
+    for (const url of lockedUrls) {
+      urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
+    }
 
     const allTabs = await chrome.tabs.query({});
 
     for (const tab of allTabs) {
       if (!tab.id || !tab.url) continue;
       const normalized = normalizeUrl(tab.url);
-      const index = urlsToMatch.indexOf(normalized);
-      if (index !== -1) {
+      const count = urlCounts.get(normalized);
+      if (count && count > 0) {
         this.lockedTabs.add(tab.id);
-        urlsToMatch.splice(index, 1);
+        urlCounts.set(normalized, count - 1);
       }
     }
 
