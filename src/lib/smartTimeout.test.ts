@@ -17,7 +17,7 @@ const BASE_TIMEOUT_MS = 30 * MS_PER_MINUTE; // 30 minutes
 describe("getWeightedAccessCount", () => {
   it("returns 0 for empty timestamps", () => {
     const now = Date.now();
-    expect(getWeightedAccessCount([], now)).toBe(0);
+    expect(getWeightedAccessCount([], now)).toEqual(0);
   });
 
   it("returns ~1 for a single access just now", () => {
@@ -78,12 +78,12 @@ describe("getWeightedAccessCount", () => {
 describe("getEffectiveTimeoutMs", () => {
   it("returns base timeout for undefined timestamps", () => {
     const timeout = getEffectiveTimeoutMs(undefined, BASE_TIMEOUT_MS);
-    expect(timeout).toBe(BASE_TIMEOUT_MS);
+    expect(timeout).toEqual(BASE_TIMEOUT_MS);
   });
 
   it("returns base timeout for empty timestamps", () => {
     const timeout = getEffectiveTimeoutMs([], BASE_TIMEOUT_MS);
-    expect(timeout).toBe(BASE_TIMEOUT_MS);
+    expect(timeout).toEqual(BASE_TIMEOUT_MS);
   });
 
   it("increases timeout for single recent access", () => {
@@ -132,7 +132,7 @@ describe("getEffectiveTimeoutMs", () => {
     const manyAccesses = Array(1000).fill(now);
 
     const timeout = getEffectiveTimeoutMs(manyAccesses, largeBaseTimeout, now);
-    expect(timeout).toBe(MAX_TIMEOUT_MS);
+    expect(timeout).toEqual(MAX_TIMEOUT_MS);
   });
 
   it("reduces effective timeout as accesses age", () => {
@@ -226,8 +226,8 @@ describe("pruneAccessHistory", () => {
     ]);
 
     const pruned = pruneAccessHistory(history, now);
-    expect(pruned.has("https://recent.com")).toBe(true);
-    expect(pruned.has("https://old.com")).toBe(false);
+    expect(pruned.has("https://recent.com")).toEqual(true);
+    expect(pruned.has("https://old.com")).toEqual(false);
   });
 
   it("keeps URLs with at least one recent timestamp", () => {
@@ -237,7 +237,7 @@ describe("pruneAccessHistory", () => {
     ]);
 
     const pruned = pruneAccessHistory(history, now);
-    expect(pruned.has("https://mixed.com")).toBe(true);
+    expect(pruned.has("https://mixed.com")).toEqual(true);
     expect(pruned.get("https://mixed.com")).toHaveLength(1);
   });
 
@@ -256,7 +256,7 @@ describe("pruneAccessHistory", () => {
     }
 
     const pruned = pruneAccessHistory(history, now);
-    expect(pruned.size).toBe(MAX_HISTORY_ENTRIES);
+    expect(pruned.size).toEqual(MAX_HISTORY_ENTRIES);
   });
 
   it("keeps highest-value URLs when evicting", () => {
@@ -271,20 +271,20 @@ describe("pruneAccessHistory", () => {
     history.set("https://high-value.com", Array(20).fill(now)); // High value
 
     const pruned = pruneAccessHistory(history, now);
-    expect(pruned.has("https://high-value.com")).toBe(true);
+    expect(pruned.has("https://high-value.com")).toEqual(true);
   });
 });
 
 describe("constants", () => {
   it("MAX_HISTORY_AGE_MS is 7 days", () => {
-    expect(MAX_HISTORY_AGE_MS).toBe(7 * MS_PER_DAY);
+    expect(MAX_HISTORY_AGE_MS).toEqual(7 * MS_PER_DAY);
   });
 
   it("MAX_TIMEOUT_MS is 30 days", () => {
-    expect(MAX_TIMEOUT_MS).toBe(30 * MS_PER_DAY);
+    expect(MAX_TIMEOUT_MS).toEqual(30 * MS_PER_DAY);
   });
 
   it("MAX_HISTORY_ENTRIES is 500", () => {
-    expect(MAX_HISTORY_ENTRIES).toBe(500);
+    expect(MAX_HISTORY_ENTRIES).toEqual(500);
   });
 });
