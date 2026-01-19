@@ -37,13 +37,23 @@ export type AutoCloseMessage = {
   autoClose: boolean;
 };
 
+export type GetTabTimeoutInfoMessage = {
+  kind: "getTabTimeoutInfo";
+  tabId: number;
+};
+
+export type GetTabTimeoutInfoResponse = {
+  timeRemainingMs: number | null;
+};
+
 export type Message =
   | CloseAllTabsMessage
   | CleanupInactiveTabsMessage
   | GetLockedTabsMessage
   | LockTabMessage
   | UnlockTabMessage
-  | AutoCloseMessage;
+  | AutoCloseMessage
+  | GetTabTimeoutInfoMessage;
 
 export function isKnownMessage(message: unknown): message is Message {
   return typeof message === "object" && message !== null && "kind" in message;

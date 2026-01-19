@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import {
   GetLockedTabsMessage,
+  GetTabTimeoutInfoMessage,
+  GetTabTimeoutInfoResponse,
   LockTabMessage,
   UnlockTabMessage,
 } from "@/lib/chrome";
@@ -75,6 +77,50 @@ function MusicIconWithToolTip() {
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+function formatTimeRemaining(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
+}
+
+function TimeRemaining({ tabId }: { tabId: number }) {
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchTimeRemaining = async () => {
+      const response: GetTabTimeoutInfoResponse =
+        await chrome.runtime.sendMessage({
+          kind: "getTabTimeoutInfo",
+          tabId,
+        } satisfies GetTabTimeoutInfoMessage);
+      setTimeRemaining(response.timeRemainingMs);
+    };
+
+    fetchTimeRemaining();
+    const interval = setInterval(fetchTimeRemaining, 1000);
+    return () => clearInterval(interval);
+  }, [tabId]);
+
+  if (timeRemaining === null) {
+    return null;
+  }
+
+  return (
+    <span className="text-xs text-muted-foreground ml-2">
+      ({formatTimeRemaining(timeRemaining)})
+    </span>
   );
 }
 
@@ -166,12 +212,15 @@ export default function OpenTabsTable() {
             )}
           </div>
           <div className="flex justify-between w-full">
-            <button
-              className="truncate max-w-[400px] hover:underline block"
-              onClick={() => switchTab(row.original.id)}
-            >
-              {row.original.title}
-            </button>
+            <div className="flex items-center">
+              <button
+                className="truncate max-w-[350px] hover:underline block"
+                onClick={() => switchTab(row.original.id)}
+              >
+                {row.original.title}
+              </button>
+              <TimeRemaining tabId={row.original.id} />
+            </div>
             <div className="flex gap-1 mr-1">
               {row.original.audible && <MusicIconWithToolTip />}
               {row.original.pinned && <PinIconWithToolTip />}

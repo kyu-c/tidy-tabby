@@ -57,6 +57,40 @@ export class TabManager {
     return getEffectiveTimeoutMs(this.accessHistory.get(url), baseTimeoutMs);
   }
 
+  public async getTimeRemainingMs(tabId: TabId): Promise<number | null> {
+    const result = await chrome.storage.local.get([
+      storageKeys.timeoutMinutes,
+      storageKeys.smartTimeout,
+      storageKeys.autoClose,
+    ]);
+
+    if (!result[storageKeys.autoClose]) {
+      return null;
+    }
+
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.pinned || tab.active || tab.audible) {
+      return null;
+    }
+
+    const baseTimeoutMs = result[storageKeys.timeoutMinutes] * 60 * 1000;
+    const smartTimeoutEnabled = result[storageKeys.smartTimeout] === true;
+
+    const lastAccessedMs =
+      tab.lastAccessed || this.lastAccessedMsById.get(tabId);
+    if (lastAccessedMs === undefined) {
+      return null;
+    }
+
+    const effectiveTimeoutMs = smartTimeoutEnabled
+      ? this.getEffectiveTimeout(tab.url || "", baseTimeoutMs)
+      : baseTimeoutMs;
+
+    const now = Date.now();
+    const elapsed = now - lastAccessedMs;
+    return Math.max(0, effectiveTimeoutMs - elapsed);
+  }
+
   public getLockedTabs(): TabId[] {
     return Array.from(this.lockedTabs);
   }
