@@ -1,5 +1,6 @@
 import {
   GetLockedTabsResponse,
+  GetTabTimeoutInfoResponse,
   isKnownMessage,
   storageKeys,
 } from "./lib/chrome";
@@ -107,5 +108,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     } else {
       cancelAutoCloseAlarm();
     }
+  }
+  if (message.kind === "getTabTimeoutInfo") {
+    tabManager.getTimeRemainingMs(message.tabId).then((timeRemainingMs) => {
+      sendResponse({ timeRemainingMs } satisfies GetTabTimeoutInfoResponse);
+    });
+    return true;
   }
 });
