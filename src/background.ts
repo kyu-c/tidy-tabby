@@ -9,6 +9,8 @@ import { TabManager } from "./lib/tabManager";
 const TAB_CLEANUP_ALARM_NAME = "tabCleanupAlarm";
 const tabManager = new TabManager();
 
+tabManager.restoreLockedTabs();
+
 function createAutoCloseAlarm() {
   chrome.alarms.clear(TAB_CLEANUP_ALARM_NAME);
   console.debug("Creating auto close alarm");

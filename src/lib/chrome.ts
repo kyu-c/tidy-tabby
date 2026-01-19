@@ -1,6 +1,7 @@
 export const storageKeys = {
   timeoutMinutes: "timeoutMinutes",
   lockedTabs: "lockedTabs",
+  lockedTabUrls: "lockedTabUrls",
   autoClose: "autoClose",
   smartTimeout: "smartTimeout",
   accessHistory: "accessHistory",

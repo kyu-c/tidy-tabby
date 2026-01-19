@@ -8,6 +8,18 @@ import {
 
 export type TabId = number;
 
+export function normalizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.origin === "null") {
+      return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+    }
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return url;
+  }
+}
+
 type AccessHistoryRecord = Record<string, number[]>;
 
 export class TabManager {
@@ -16,17 +28,13 @@ export class TabManager {
   private accessHistory: Map<string, number[]> = new Map();
 
   constructor() {
-    chrome.storage.local
-      .get([storageKeys.lockedTabs, storageKeys.accessHistory])
-      .then((result) => {
-        this.lockedTabs = new Set(result[storageKeys.lockedTabs]);
-
-        const history: AccessHistoryRecord | undefined =
-          result[storageKeys.accessHistory];
-        if (history) {
-          this.accessHistory = new Map(Object.entries(history));
-        }
-      });
+    chrome.storage.local.get([storageKeys.accessHistory]).then((result) => {
+      const history: AccessHistoryRecord | undefined =
+        result[storageKeys.accessHistory];
+      if (history) {
+        this.accessHistory = new Map(Object.entries(history));
+      }
+    });
   }
 
   private persistAccessHistory() {
@@ -34,6 +42,45 @@ export class TabManager {
       this.accessHistory,
     );
     chrome.storage.local.set({ [storageKeys.accessHistory]: historyObj });
+  }
+
+  private async persistLockedTabs() {
+    const urls: string[] = [];
+    for (const tabId of this.lockedTabs) {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        if (tab.url) {
+          urls.push(normalizeUrl(tab.url));
+        }
+      } catch {
+        // Tab may no longer exist, skip it
+      }
+    }
+    chrome.storage.local.set({ [storageKeys.lockedTabUrls]: urls });
+  }
+
+  public async restoreLockedTabs() {
+    const result = await chrome.storage.local.get(storageKeys.lockedTabUrls);
+    const lockedUrls: string[] = result[storageKeys.lockedTabUrls] || [];
+
+    const urlCounts = new Map<string, number>();
+    for (const url of lockedUrls) {
+      urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
+    }
+
+    const allTabs = await chrome.tabs.query({});
+
+    for (const tab of allTabs) {
+      if (!tab.id || !tab.url) continue;
+      const normalized = normalizeUrl(tab.url);
+      const count = urlCounts.get(normalized);
+      if (count && count > 0) {
+        this.lockedTabs.add(tab.id);
+        urlCounts.set(normalized, count - 1);
+      }
+    }
+
+    await this.persistLockedTabs();
   }
 
   public recordAccess(url: string | undefined) {
@@ -107,14 +154,16 @@ export class TabManager {
     } else {
       this.lockedTabs.delete(tabId);
     }
-    chrome.storage.local.set({
-      [storageKeys.lockedTabs]: Array.from(this.lockedTabs),
-    });
+    await this.persistLockedTabs();
   }
 
   public async handleRemovedTab(tabId: TabId) {
     this.lastAccessedMsById.delete(tabId);
+    const wasLocked = this.lockedTabs.has(tabId);
     this.lockedTabs.delete(tabId);
+    if (wasLocked) {
+      await this.persistLockedTabs();
+    }
   }
 
   public async cleanupInactiveTabs() {
@@ -152,6 +201,11 @@ export class TabManager {
       const tabId = tab.id;
       if (!tabId) {
         console.debug("Tab has no id, skipping");
+        continue;
+      }
+
+      if (this.lockedTabs.has(tabId)) {
+        console.debug("Tab is locked, skipping");
         continue;
       }
 
