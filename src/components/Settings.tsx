@@ -76,85 +76,73 @@ export default function Settings() {
             <ThemeMenu />
           </div>
           <div className="flex items-center justify-between">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label>Auto Close</Label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Automatically close inactive tabs</p>
-                  <p>after the specified timeout.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Label>Auto Close</Label>
             <Switch
               checked={autoClose}
               onCheckedChange={(checked) => setAutoClose(checked)}
             />
           </div>
-          <div className="flex items-center justify-between">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label>Smart Timeout</Label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Extend timeout for frequently</p>
-                  <p>accessed tabs.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <Switch
-              checked={smartTimeout}
-              onCheckedChange={(checked) => setSmartTimeout(checked)}
-            />
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-base font-medium leading-none">
-              Inactive Tab Timeout
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              Set the duration after which inactive tabs will be closed.
-            </p>
-
-            <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hours">Hours</Label>
-                  <Input
-                    id="hours"
-                    type="number"
-                    min={0}
-                    value={hours}
-                    onChange={(e) =>
-                      setHours(
-                        Math.max(0, Number.parseInt(e.target.value) || 0),
-                      )
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="minutes">Minutes</Label>
-                  <Input
-                    id="minutes"
-                    type="number"
-                    step={5}
-                    min={0}
-                    max={59}
-                    value={minutes}
-                    onChange={(e) =>
-                      setMinutes(
-                        Math.max(
-                          0,
-                          Math.min(59, Number.parseInt(e.target.value) || 0),
-                        ),
-                      )
-                    }
-                  />
+          {autoClose && (
+            <div className="space-y-4 pl-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">
+                  Close inactive tabs after
+                </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hours">Hours</Label>
+                    <Input
+                      id="hours"
+                      type="number"
+                      min={0}
+                      value={hours}
+                      onChange={(e) =>
+                        setHours(
+                          Math.max(0, Number.parseInt(e.target.value) || 0),
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="minutes">Minutes</Label>
+                    <Input
+                      id="minutes"
+                      type="number"
+                      step={5}
+                      min={0}
+                      max={59}
+                      value={minutes}
+                      onChange={(e) =>
+                        setMinutes(
+                          Math.max(
+                            0,
+                            Math.min(59, Number.parseInt(e.target.value) || 0),
+                          ),
+                        )
+                      }
+                    />
+                  </div>
                 </div>
               </div>
+              <div className="flex items-center justify-between">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Label>Smart Timeout</Label>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Extend timeout for frequently</p>
+                      <p>visited tabs.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Switch
+                  checked={smartTimeout}
+                  onCheckedChange={(checked) => setSmartTimeout(checked)}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
