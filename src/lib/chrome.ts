@@ -5,6 +5,7 @@ export const storageKeys = {
   autoClose: "autoClose",
   smartTimeout: "smartTimeout",
   accessHistory: "accessHistory",
+  excludedPatterns: "excludedPatterns",
 };
 
 export type CloseAllTabsMessage = {
