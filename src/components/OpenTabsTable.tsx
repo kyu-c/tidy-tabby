@@ -12,6 +12,7 @@ import {
   LockIcon,
   MusicIcon,
   PinIcon,
+  ShieldCheckIcon,
   XIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -25,13 +26,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type {
-  GetLockedTabsMessage,
-  GetTabTimeoutInfoMessage,
-  GetTabTimeoutInfoResponse,
-  LockTabMessage,
-  UnlockTabMessage,
+import {
+  type GetLockedTabsMessage,
+  type GetTabTimeoutInfoMessage,
+  type GetTabTimeoutInfoResponse,
+  type LockTabMessage,
+  storageKeys,
+  type UnlockTabMessage,
 } from "@/lib/chrome";
+import { isUrlExcluded } from "@/lib/tabManager";
 import {
   Tooltip,
   TooltipContent,
@@ -46,6 +49,7 @@ export interface Tab {
   locked: boolean;
   pinned: boolean;
   audible: boolean;
+  excluded: boolean;
 }
 
 function PinIconWithToolTip() {
@@ -95,6 +99,22 @@ function formatTimeRemaining(ms: number): string {
   return `${seconds}s`;
 }
 
+function ExcludedIconWithTooltip() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ShieldCheckIcon className="w-4 h-4" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>This tab matches an excluded URL pattern.</p>
+          <p>It won't be auto-closed.</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function TimeRemaining({ tabId }: { tabId: number }) {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
@@ -129,6 +149,9 @@ async function getTabs(): Promise<Tab[]> {
     kind: "getLockedTabs",
   } satisfies GetLockedTabsMessage);
 
+  const result = await chrome.storage.local.get(storageKeys.excludedPatterns);
+  const excludedPatterns: string[] = result[storageKeys.excludedPatterns] || [];
+
   const tabs = await chrome.tabs.query({});
   return tabs
     .filter((tab) => tab.id)
@@ -139,6 +162,7 @@ async function getTabs(): Promise<Tab[]> {
       locked: lockedTabs.lockedTabs.includes(tab.id!),
       pinned: tab.pinned,
       audible: tab.audible ?? false,
+      excluded: isUrlExcluded(tab.url, excludedPatterns),
     }));
 }
 
@@ -223,6 +247,7 @@ export default function OpenTabsTable() {
               <TimeRemaining tabId={row.original.id} />
             </div>
             <div className="flex gap-1 mr-1">
+              {row.original.excluded && <ExcludedIconWithTooltip />}
               {row.original.audible && <MusicIconWithToolTip />}
               {row.original.pinned && <PinIconWithToolTip />}
               <Button

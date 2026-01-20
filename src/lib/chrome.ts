@@ -46,6 +46,7 @@ export type GetTabTimeoutInfoMessage = {
 
 export type GetTabTimeoutInfoResponse = {
   timeRemainingMs: number | null;
+  isExcluded: boolean;
 };
 
 export type Message =
