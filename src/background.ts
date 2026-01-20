@@ -112,8 +112,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
   }
   if (message.kind === "getTabTimeoutInfo") {
-    tabManager.getTimeRemainingMs(message.tabId).then((timeRemainingMs) => {
-      sendResponse({ timeRemainingMs } satisfies GetTabTimeoutInfoResponse);
+    tabManager.getTabTimeoutInfo(message.tabId).then((info) => {
+      sendResponse({
+        timeRemainingMs: info.timeRemainingMs,
+        isExcluded: info.isExcluded,
+      } satisfies GetTabTimeoutInfoResponse);
     });
     return true;
   }

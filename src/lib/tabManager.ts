@@ -20,7 +20,20 @@ export function normalizeUrl(url: string): string {
   }
 }
 
+export function isUrlExcluded(
+  url: string | undefined,
+  patterns: string[],
+): boolean {
+  if (!url || patterns.length === 0) return false;
+  return patterns.some((pattern) => url.includes(pattern));
+}
+
 type AccessHistoryRecord = Record<string, number[]>;
+
+export type TabTimeoutInfo = {
+  timeRemainingMs: number | null;
+  isExcluded: boolean;
+};
 
 export class TabManager {
   private lastAccessedMsById: Map<TabId, number> = new Map();
@@ -105,20 +118,27 @@ export class TabManager {
     return getEffectiveTimeoutMs(this.accessHistory.get(url), baseTimeoutMs);
   }
 
-  public async getTimeRemainingMs(tabId: TabId): Promise<number | null> {
+  public async getTabTimeoutInfo(tabId: TabId): Promise<TabTimeoutInfo> {
     const result = await chrome.storage.local.get([
       storageKeys.timeoutMinutes,
       storageKeys.smartTimeout,
       storageKeys.autoClose,
+      storageKeys.excludedPatterns,
     ]);
 
     if (!result[storageKeys.autoClose]) {
-      return null;
+      return { timeRemainingMs: null, isExcluded: false };
     }
 
     const tab = await chrome.tabs.get(tabId);
     if (tab.pinned || tab.active || tab.audible) {
-      return null;
+      return { timeRemainingMs: null, isExcluded: false };
+    }
+
+    const excludedPatterns: string[] =
+      result[storageKeys.excludedPatterns] || [];
+    if (isUrlExcluded(tab.url, excludedPatterns)) {
+      return { timeRemainingMs: null, isExcluded: true };
     }
 
     const baseTimeoutMs = result[storageKeys.timeoutMinutes] * 60 * 1000;
@@ -127,7 +147,7 @@ export class TabManager {
     const lastAccessedMs =
       tab.lastAccessed || this.lastAccessedMsById.get(tabId);
     if (lastAccessedMs === undefined) {
-      return null;
+      return { timeRemainingMs: null, isExcluded: false };
     }
 
     const effectiveTimeoutMs = smartTimeoutEnabled
@@ -136,7 +156,10 @@ export class TabManager {
 
     const now = Date.now();
     const elapsed = now - lastAccessedMs;
-    return Math.max(0, effectiveTimeoutMs - elapsed);
+    return {
+      timeRemainingMs: Math.max(0, effectiveTimeoutMs - elapsed),
+      isExcluded: false,
+    };
   }
 
   public getLockedTabs(): TabId[] {
@@ -187,9 +210,12 @@ export class TabManager {
     const result = await chrome.storage.local.get([
       storageKeys.timeoutMinutes,
       storageKeys.smartTimeout,
+      storageKeys.excludedPatterns,
     ]);
     const baseTimeoutMs = result[storageKeys.timeoutMinutes] * 60 * 1000;
     const smartTimeoutEnabled = result[storageKeys.smartTimeout] === true;
+    const excludedPatterns: string[] =
+      result[storageKeys.excludedPatterns] || [];
 
     console.debug(
       `[TabManager] Cleaning up inactive tabs with base timeout ${result[storageKeys.timeoutMinutes]}m, smartTimeout=${smartTimeoutEnabled}`,
@@ -226,6 +252,11 @@ export class TabManager {
         continue;
       }
 
+      if (isUrlExcluded(tab.url, excludedPatterns)) {
+        console.debug("Tab URL matches excluded pattern, skipping");
+        continue;
+      }
+
       const lastAccessedMs =
         tab.lastAccessed || this.lastAccessedMsById.get(tabId);
       if (lastAccessedMs === undefined) {
@@ -256,8 +287,15 @@ export class TabManager {
    * 2. Pinned tabs (browser feature)
    * 3. Audible tabs
    * 4. Locked tabs (TidyTabby feature)
+   * 5. Tabs matching excluded URL patterns
    */
   public async closeAllTabs() {
+    const result = await chrome.storage.local.get([
+      storageKeys.excludedPatterns,
+    ]);
+    const excludedPatterns: string[] =
+      result[storageKeys.excludedPatterns] || [];
+
     const allTabs = await chrome.tabs.query({});
     for (const tab of allTabs) {
       if (tab.active) {
@@ -273,6 +311,9 @@ export class TabManager {
         continue;
       }
       if (this.lockedTabs.has(tab.id)) {
+        continue;
+      }
+      if (isUrlExcluded(tab.url, excludedPatterns)) {
         continue;
       }
 
