@@ -26,7 +26,6 @@ export class TabManager {
   private lastAccessedMsById: Map<TabId, number> = new Map();
   private lockedTabs: Set<TabId> = new Set();
   private accessHistory: Map<string, number[]> = new Map();
-  private programmaticClosures: Set<TabId> = new Set();
   private tabUrls: Map<TabId, string> = new Map();
 
   constructor() {
@@ -172,8 +171,7 @@ export class TabManager {
       await this.persistLockedTabs();
     }
 
-    const wasProgrammaticClose = this.programmaticClosures.delete(tabId);
-    const isManualClose = !isWindowClosing && !wasProgrammaticClose;
+    const isManualClose = !isWindowClosing;
 
     if (isManualClose && url) {
       const normalizedUrl = normalizeUrl(url);
@@ -247,7 +245,6 @@ export class TabManager {
       );
 
       if (now - lastAccessedMs > effectiveTimeoutMs) {
-        this.programmaticClosures.add(tabId);
         chrome.tabs.remove(tabId);
       }
     }
@@ -279,7 +276,6 @@ export class TabManager {
         continue;
       }
 
-      this.programmaticClosures.add(tab.id);
       chrome.tabs.remove(tab.id);
     }
   }
