@@ -1,21 +1,10 @@
-import { useEffect, useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  ColumnDef,
+  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,7 +14,18 @@ import {
   PinIcon,
   XIcon,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import type {
   GetLockedTabsMessage,
   GetTabTimeoutInfoMessage,
   GetTabTimeoutInfoResponse,
@@ -214,6 +214,7 @@ export default function OpenTabsTable() {
           <div className="flex justify-between w-full">
             <div className="flex items-center">
               <button
+                type="button"
                 className="truncate max-w-[350px] hover:underline block"
                 onClick={() => switchTab(row.original.id)}
               >

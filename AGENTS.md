@@ -12,9 +12,10 @@ pnpm dev              # Start Vite dev server
 pnpm build            # TypeScript compile + Vite build (outputs to build/)
 pnpm preview          # Preview production build
 
-# Linting & Formatting
-pnpm lint             # Run ESLint
-pnpm prettier         # Format code with Prettier
+# Linting & Formatting (Biome)
+pnpm lint             # Check for lint and format issues
+pnpm lint:fix         # Fix lint and format issues
+pnpm format           # Format code only
 
 # Testing (Vitest)
 pnpm test             # Run all tests (single run)
