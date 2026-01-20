@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isUrlExcluded, normalizeUrl } from "./tabManager";
+import { isUrlExcluded, normalizeUrl } from "./urls";
 
 describe("normalizeUrl", () => {
   it("strips query parameters", () => {
