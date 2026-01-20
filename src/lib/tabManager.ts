@@ -26,6 +26,8 @@ export class TabManager {
   private lastAccessedMsById: Map<TabId, number> = new Map();
   private lockedTabs: Set<TabId> = new Set();
   private accessHistory: Map<string, number[]> = new Map();
+  private programmaticClosures: Set<TabId> = new Set();
+  private tabUrls: Map<TabId, string> = new Map();
 
   constructor() {
     chrome.storage.local.get([storageKeys.accessHistory]).then((result) => {
@@ -145,6 +147,9 @@ export class TabManager {
   public async updateLastAccessed(tabId: TabId) {
     const tab = await chrome.tabs.get(tabId);
     this.lastAccessedMsById.set(tabId, Date.now());
+    if (tab.url) {
+      this.tabUrls.set(tabId, tab.url);
+    }
     console.debug(`[TabManager] Updated tab ${tabId}`, tab);
   }
 
@@ -157,12 +162,26 @@ export class TabManager {
     await this.persistLockedTabs();
   }
 
-  public async handleRemovedTab(tabId: TabId) {
+  public async handleRemovedTab(tabId: TabId, isWindowClosing: boolean) {
+    const url = this.tabUrls.get(tabId);
     this.lastAccessedMsById.delete(tabId);
+    this.tabUrls.delete(tabId);
     const wasLocked = this.lockedTabs.has(tabId);
     this.lockedTabs.delete(tabId);
     if (wasLocked) {
       await this.persistLockedTabs();
+    }
+
+    const wasProgrammaticClose = this.programmaticClosures.delete(tabId);
+    const isManualClose = !isWindowClosing && !wasProgrammaticClose;
+
+    if (isManualClose && url) {
+      const normalizedUrl = normalizeUrl(url);
+      this.accessHistory.delete(normalizedUrl);
+      this.persistAccessHistory();
+      console.debug(
+        `[TabManager] Cleared access history for manually closed tab: ${normalizedUrl}`,
+      );
     }
   }
 
@@ -228,6 +247,7 @@ export class TabManager {
       );
 
       if (now - lastAccessedMs > effectiveTimeoutMs) {
+        this.programmaticClosures.add(tabId);
         chrome.tabs.remove(tabId);
       }
     }
@@ -259,6 +279,7 @@ export class TabManager {
         continue;
       }
 
+      this.programmaticClosures.add(tab.id);
       chrome.tabs.remove(tab.id);
     }
   }

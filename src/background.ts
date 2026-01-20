@@ -72,8 +72,8 @@ chrome.tabs.onCreated.addListener(async (tab) => {
   tabManager.updateLastAccessed(tab.id);
 });
 
-chrome.tabs.onRemoved.addListener((tabId) => {
-  tabManager.handleRemovedTab(tabId);
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  tabManager.handleRemovedTab(tabId, removeInfo.isWindowClosing);
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
