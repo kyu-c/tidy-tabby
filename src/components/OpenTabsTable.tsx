@@ -34,7 +34,7 @@ import {
   storageKeys,
   type UnlockTabMessage,
 } from "@/lib/chrome";
-import { isUrlExcluded } from "@/lib/tabManager";
+import { isUrlExcluded } from "@/lib/urls";
 import {
   Tooltip,
   TooltipContent,
