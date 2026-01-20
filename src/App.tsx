@@ -1,11 +1,14 @@
+import { useState } from "react";
 import tidyTabby from "@/assets/tidy-tabby.png";
+import CloseAllTabsButton from "@/components/CloseAllTabsButton";
+import CloseInactiveButton from "@/components/CloseInactiveButton";
 import OpenTabsTable from "@/components/OpenTabsTable";
 import Settings from "@/components/Settings";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { CleanupInactiveTabsMessage, CloseAllTabsMessage } from "@/lib/chrome";
-import { useState } from "react";
-import CloseAllTabsButton from "@/components/CloseAllTabsButton";
-import CloseInactiveButton from "@/components/CloseInactiveButton";
+import type {
+  CleanupInactiveTabsMessage,
+  CloseAllTabsMessage,
+} from "@/lib/chrome";
 
 function App() {
   const [tableKey, setTableKey] = useState(0);

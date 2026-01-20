@@ -1,13 +1,13 @@
+import { useState } from "react";
+import vacuum from "@/assets/vacuum.png";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "./ui/button";
-import vacuum from "@/assets/vacuum.png";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 export default function CloseAllTabsButton({
   onClick,

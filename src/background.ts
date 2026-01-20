@@ -1,6 +1,6 @@
 import {
-  GetLockedTabsResponse,
-  GetTabTimeoutInfoResponse,
+  type GetLockedTabsResponse,
+  type GetTabTimeoutInfoResponse,
   isKnownMessage,
   storageKeys,
 } from "./lib/chrome";

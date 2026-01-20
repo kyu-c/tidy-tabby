@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import gear from "@/assets/gear.png";
+import { ThemeMenu } from "@/components/ThemeMenu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { ThemeMenu } from "@/components/ThemeMenu";
 import { storageKeys } from "@/lib/chrome";
 import {
   Tooltip,
@@ -98,7 +98,7 @@ export default function Settings() {
                       value={hours}
                       onChange={(e) =>
                         setHours(
-                          Math.max(0, Number.parseInt(e.target.value) || 0),
+                          Math.max(0, Number.parseInt(e.target.value, 10) || 0),
                         )
                       }
                     />
@@ -116,7 +116,10 @@ export default function Settings() {
                         setMinutes(
                           Math.max(
                             0,
-                            Math.min(59, Number.parseInt(e.target.value) || 0),
+                            Math.min(
+                              59,
+                              Number.parseInt(e.target.value, 10) || 0,
+                            ),
                           ),
                         )
                       }

@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  getWeightedAccessCount,
+  DECAY_LAMBDA,
   getEffectiveTimeoutMs,
-  pruneTimestamps,
-  pruneAccessHistory,
+  getWeightedAccessCount,
   MAX_HISTORY_AGE_MS,
   MAX_HISTORY_ENTRIES,
   MAX_TIMEOUT_MS,
-  DECAY_LAMBDA,
+  pruneAccessHistory,
+  pruneTimestamps,
 } from "./smartTimeout";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
