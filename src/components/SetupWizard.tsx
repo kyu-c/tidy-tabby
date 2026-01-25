@@ -50,17 +50,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   const handleFinish = async () => {
-    const settings: Record<string, unknown> = {
-      [storageKeys.wizardVersion]: CURRENT_WIZARD_VERSION,
-      [storageKeys.autoClose]: autoClose,
-    };
-
     if (autoClose) {
-      settings[storageKeys.timeoutMinutes] = hours * 60 + minutes;
-      settings[storageKeys.smartTimeout] = smartTimeout;
+      await chrome.storage.local.set({
+        [storageKeys.wizardVersion]: CURRENT_WIZARD_VERSION,
+        [storageKeys.autoClose]: true,
+        [storageKeys.timeoutMinutes]: hours * 60 + minutes,
+        [storageKeys.smartTimeout]: smartTimeout,
+      });
+    } else {
+      await chrome.storage.local.set({
+        [storageKeys.wizardVersion]: CURRENT_WIZARD_VERSION,
+        [storageKeys.autoClose]: false,
+      });
     }
-
-    await chrome.storage.local.set(settings);
     onComplete();
   };
 
