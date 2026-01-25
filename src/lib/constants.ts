@@ -1,0 +1,3 @@
+export const CURRENT_WIZARD_VERSION = 1;
+export const DEFAULT_TIMEOUT_HOURS = 3;
+export const DEFAULT_TIMEOUT_MINUTES = 0;
