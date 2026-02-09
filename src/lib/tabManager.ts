@@ -16,34 +16,63 @@ export type TabTimeoutInfo = {
   isExcluded: boolean;
 };
 
+export type TabManagerChromeApi = {
+  storage: {
+    local: {
+      get(keys: string | string[]): Promise<Record<string, unknown>>;
+      set(items: Record<string, unknown>): Promise<void>;
+    };
+  };
+  tabs: {
+    get(tabId: number): Promise<chrome.tabs.Tab>;
+    query(queryInfo: chrome.tabs.QueryInfo): Promise<chrome.tabs.Tab[]>;
+    remove(tabId: number): Promise<void>;
+  };
+};
+
 export class TabManager {
   private lastAccessedMsById: Map<TabId, number> = new Map();
   private lockedTabs: Set<TabId> = new Set();
   private accessHistory: Map<string, number[]> = new Map();
   private tabUrls: Map<TabId, string> = new Map();
+  private chromeApi: TabManagerChromeApi;
+  private readyPromise: Promise<void>;
 
-  constructor() {
-    chrome.storage.local.get([storageKeys.accessHistory]).then((result) => {
-      const history: AccessHistoryRecord | undefined =
-        result[storageKeys.accessHistory];
-      if (history) {
-        this.accessHistory = new Map(Object.entries(history));
-      }
-    });
+  constructor(chromeApi: TabManagerChromeApi = chrome) {
+    this.chromeApi = chromeApi;
+    this.readyPromise = this.loadAccessHistory();
+  }
+
+  private async loadAccessHistory(): Promise<void> {
+    const result = await this.chromeApi.storage.local.get([
+      storageKeys.accessHistory,
+    ]);
+    const history = result[storageKeys.accessHistory] as
+      | AccessHistoryRecord
+      | undefined;
+    if (history) {
+      this.accessHistory = new Map(Object.entries(history));
+    }
+  }
+
+  public ready(): Promise<void> {
+    return this.readyPromise;
   }
 
   private persistAccessHistory() {
     const historyObj: AccessHistoryRecord = Object.fromEntries(
       this.accessHistory,
     );
-    chrome.storage.local.set({ [storageKeys.accessHistory]: historyObj });
+    this.chromeApi.storage.local.set({
+      [storageKeys.accessHistory]: historyObj,
+    });
   }
 
   private async persistLockedTabs() {
     const urls: string[] = [];
     for (const tabId of this.lockedTabs) {
       try {
-        const tab = await chrome.tabs.get(tabId);
+        const tab = await this.chromeApi.tabs.get(tabId);
         if (tab.url) {
           urls.push(normalizeUrl(tab.url));
         }
@@ -51,19 +80,21 @@ export class TabManager {
         // Tab may no longer exist, skip it
       }
     }
-    chrome.storage.local.set({ [storageKeys.lockedTabUrls]: urls });
+    this.chromeApi.storage.local.set({ [storageKeys.lockedTabUrls]: urls });
   }
 
   public async restoreLockedTabs() {
-    const result = await chrome.storage.local.get(storageKeys.lockedTabUrls);
-    const lockedUrls: string[] = result[storageKeys.lockedTabUrls] || [];
+    const result = await this.chromeApi.storage.local.get(
+      storageKeys.lockedTabUrls,
+    );
+    const lockedUrls = (result[storageKeys.lockedTabUrls] || []) as string[];
 
     const urlCounts = new Map<string, number>();
     for (const url of lockedUrls) {
       urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
     }
 
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await this.chromeApi.tabs.query({});
 
     for (const tab of allTabs) {
       if (!tab.id || !tab.url) continue;
@@ -100,7 +131,7 @@ export class TabManager {
   }
 
   public async getTabTimeoutInfo(tabId: TabId): Promise<TabTimeoutInfo> {
-    const result = await chrome.storage.local.get([
+    const result = await this.chromeApi.storage.local.get([
       storageKeys.timeoutMinutes,
       storageKeys.smartTimeout,
       storageKeys.autoClose,
@@ -111,18 +142,19 @@ export class TabManager {
       return { timeRemainingMs: null, isExcluded: false };
     }
 
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await this.chromeApi.tabs.get(tabId);
     if (tab.pinned || tab.active || tab.audible) {
       return { timeRemainingMs: null, isExcluded: false };
     }
 
-    const excludedPatterns: string[] =
-      result[storageKeys.excludedPatterns] || [];
+    const excludedPatterns = (result[storageKeys.excludedPatterns] ||
+      []) as string[];
     if (isUrlExcluded(tab.url, excludedPatterns)) {
       return { timeRemainingMs: null, isExcluded: true };
     }
 
-    const baseTimeoutMs = result[storageKeys.timeoutMinutes] * 60 * 1000;
+    const baseTimeoutMs =
+      (result[storageKeys.timeoutMinutes] as number) * 60 * 1000;
     const smartTimeoutEnabled = result[storageKeys.smartTimeout] === true;
 
     const lastAccessedMs =
@@ -148,7 +180,7 @@ export class TabManager {
   }
 
   public async updateLastAccessed(tabId: TabId) {
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await this.chromeApi.tabs.get(tabId);
     this.lastAccessedMsById.set(tabId, Date.now());
     if (tab.url) {
       this.tabUrls.set(tabId, tab.url);
@@ -188,22 +220,23 @@ export class TabManager {
   }
 
   public async cleanupInactiveTabs() {
-    const result = await chrome.storage.local.get([
+    const result = await this.chromeApi.storage.local.get([
       storageKeys.timeoutMinutes,
       storageKeys.smartTimeout,
       storageKeys.excludedPatterns,
     ]);
-    const baseTimeoutMs = result[storageKeys.timeoutMinutes] * 60 * 1000;
+    const baseTimeoutMs =
+      (result[storageKeys.timeoutMinutes] as number) * 60 * 1000;
     const smartTimeoutEnabled = result[storageKeys.smartTimeout] === true;
-    const excludedPatterns: string[] =
-      result[storageKeys.excludedPatterns] || [];
+    const excludedPatterns = (result[storageKeys.excludedPatterns] ||
+      []) as string[];
 
     console.debug(
       `[TabManager] Cleaning up inactive tabs with base timeout ${result[storageKeys.timeoutMinutes]}m, smartTimeout=${smartTimeoutEnabled}`,
     );
     const now = Date.now();
 
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await this.chromeApi.tabs.query({});
 
     for (const tab of allTabs) {
       console.debug("Checking Tab:", tab.url);
@@ -257,7 +290,7 @@ export class TabManager {
       );
 
       if (now - lastAccessedMs > effectiveTimeoutMs) {
-        chrome.tabs.remove(tabId);
+        this.chromeApi.tabs.remove(tabId);
       }
     }
   }
@@ -271,13 +304,13 @@ export class TabManager {
    * 5. Tabs matching excluded URL patterns
    */
   public async closeAllTabs() {
-    const result = await chrome.storage.local.get([
+    const result = await this.chromeApi.storage.local.get([
       storageKeys.excludedPatterns,
     ]);
-    const excludedPatterns: string[] =
-      result[storageKeys.excludedPatterns] || [];
+    const excludedPatterns = (result[storageKeys.excludedPatterns] ||
+      []) as string[];
 
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await this.chromeApi.tabs.query({});
     for (const tab of allTabs) {
       if (tab.active) {
         continue;
@@ -298,7 +331,7 @@ export class TabManager {
         continue;
       }
 
-      chrome.tabs.remove(tab.id);
+      this.chromeApi.tabs.remove(tab.id);
     }
   }
 }
