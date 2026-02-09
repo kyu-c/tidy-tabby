@@ -24,62 +24,71 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   const [minutes, setMinutes] = useState(0);
   const [excludedPatterns, setExcludedPatterns] = useState<string[]>([]);
   const [newPattern, setNewPattern] = useState("");
+  const [hydrated, setHydrated] = useState(false);
 
   // Load settings from storage
   useEffect(() => {
-    chrome.storage.local.get(storageKeys.timeoutMinutes, (result) => {
-      const totalMinutes = result[storageKeys.timeoutMinutes] as
-        | number
-        | undefined;
-      if (totalMinutes) {
-        setHours(Math.floor(totalMinutes / 60));
-        setMinutes(totalMinutes % 60);
-      }
-    });
-  }, []);
+    let cancelled = false;
 
-  useEffect(() => {
-    chrome.storage.local.get(storageKeys.autoClose, (result) => {
-      setAutoClose(result[storageKeys.autoClose] as boolean);
-    });
-  }, []);
+    chrome.storage.local.get(
+      [
+        storageKeys.timeoutMinutes,
+        storageKeys.autoClose,
+        storageKeys.smartTimeout,
+        storageKeys.excludedPatterns,
+      ],
+      (result) => {
+        if (cancelled) return;
 
-  useEffect(() => {
-    chrome.storage.local.get(storageKeys.smartTimeout, (result) => {
-      setSmartTimeout(result[storageKeys.smartTimeout] as boolean);
-    });
-  }, []);
+        const totalMinutes = result[storageKeys.timeoutMinutes] as
+          | number
+          | undefined;
+        if (totalMinutes !== undefined) {
+          setHours(Math.floor(totalMinutes / 60));
+          setMinutes(totalMinutes % 60);
+        }
 
-  useEffect(() => {
-    chrome.storage.local.get(storageKeys.excludedPatterns, (result) => {
-      const patterns = result[storageKeys.excludedPatterns] as
-        | string[]
-        | undefined;
-      if (patterns) {
-        setExcludedPatterns(patterns);
-      }
-    });
+        setAutoClose(
+          (result[storageKeys.autoClose] as boolean | undefined) ?? false,
+        );
+        setSmartTimeout(
+          (result[storageKeys.smartTimeout] as boolean | undefined) ?? false,
+        );
+        setExcludedPatterns(
+          (result[storageKeys.excludedPatterns] as string[] | undefined) ?? [],
+        );
+        setHydrated(true);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Persist settings to storage
   useEffect(() => {
+    if (!hydrated) return;
     const totalMinutes = hours * 60 + minutes;
     chrome.storage.local.set({ [storageKeys.timeoutMinutes]: totalMinutes });
-  }, [hours, minutes]);
+  }, [hours, hydrated, minutes]);
 
   useEffect(() => {
+    if (!hydrated) return;
     chrome.storage.local.set({ [storageKeys.autoClose]: autoClose });
-  }, [autoClose]);
+  }, [autoClose, hydrated]);
 
   useEffect(() => {
+    if (!hydrated) return;
     chrome.storage.local.set({ [storageKeys.smartTimeout]: smartTimeout });
-  }, [smartTimeout]);
+  }, [hydrated, smartTimeout]);
 
   useEffect(() => {
+    if (!hydrated) return;
     chrome.storage.local.set({
       [storageKeys.excludedPatterns]: excludedPatterns,
     });
-  }, [excludedPatterns]);
+  }, [excludedPatterns, hydrated]);
 
   const addPattern = () => {
     const trimmed = newPattern.trim();
