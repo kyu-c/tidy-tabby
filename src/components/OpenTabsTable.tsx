@@ -34,6 +34,7 @@ import {
   storageKeys,
   type UnlockTabMessage,
 } from "@/lib/chrome";
+import { logger } from "@/lib/logger";
 import { isUrlExcluded } from "@/lib/urls";
 import {
   Tooltip,
@@ -176,7 +177,7 @@ export default function OpenTabsTable() {
   const toggleLock = (id: number) => {
     const locked = tabs.find((tab) => tab.id === id)?.locked;
     if (locked === undefined) {
-      console.error("Tab not found:", id);
+      logger.error("Tab not found:", id);
       return;
     }
     chrome.runtime.sendMessage({
