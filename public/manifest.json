@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TidyTabby",
   "version": "0.4.0",
-  "description": "TidyTabby automatically closes inactive tabs after a set time.",
+  "description": "TidyTabby keeps tab clutter under control by automatically closing inactive tabs",
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",
