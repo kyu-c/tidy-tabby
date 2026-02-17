@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="src/assets/tidy-tabby.png" alt="TidyTabby Mascot" width="200">
+  <img src="src/assets/tidy-tabby.png" alt="TidyTabby mascot" width="200">
 </p>
 
 # TidyTabby
 
-TidyTabby is a Chrome extension that helps you stay focused by automatically closing tabs that have been inactive for a set amount of time.
+TidyTabby is a Chrome extension that keeps your browser clean by automatically closing tabs that have been inactive for too long.
 
 ## Features
 
@@ -53,28 +53,31 @@ Light, dark, and system theme options.
 
 ## Installation
 
-1. Clone this repository
-2. Install dependencies:
+- [Install TidyTabby from Chrome Web Store](https://chromewebstore.google.com/detail/tidytabby/lghbcbiajpooldbbodilongjaenbpbim)
+
+## Local installation:
+
+1. Install dependencies:
+
    ```bash
    pnpm install
    ```
-3. Build the extension:
+
+2. Build the extension:
+
    ```bash
    pnpm build
    ```
-4. Load the extension in Chrome:
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode" in the top right
-   - Click "Load unpacked" and select the `build` directory
 
-## Development
+3. Load it in Chrome:
+   - Open `chrome://extensions/`
+   - Turn on **Developer mode**
+   - Click **Load unpacked**
+   - Select the `build` directory
 
-```bash
-pnpm dev       # Start Vite dev server
-pnpm build     # Build for production
-pnpm lint      # Check for lint/format issues
-pnpm test      # Run tests
-```
+## Contributions
+
+This repository does not accept pull requests.
 
 ## License
 
