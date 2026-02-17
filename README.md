@@ -6,6 +6,10 @@
 
 TidyTabby is a Chrome extension that keeps your browser clean by automatically closing tabs that have been inactive for too long.
 
+<p align="center">
+  <img src="screenshots/open-tabs.png" alt="TidyTabby open tabs view" width="900">
+</p>
+
 ## Features
 
 ### Auto Close
