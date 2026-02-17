@@ -1,4 +1,5 @@
 import { storageKeys } from "./chrome";
+import { logger } from "./logger";
 import {
   getEffectiveTimeoutMs,
   MAX_HISTORY_ENTRIES,
@@ -185,7 +186,7 @@ export class TabManager {
     if (tab.url) {
       this.tabUrls.set(tabId, tab.url);
     }
-    console.debug(`[TabManager] Updated tab ${tabId}`, tab);
+    logger.debug(`[TabManager] Updated tab ${tabId}`, tab);
   }
 
   public async updateLocked(tabId: TabId, locked: boolean) {
@@ -213,7 +214,7 @@ export class TabManager {
       const normalizedUrl = normalizeUrl(url);
       this.accessHistory.delete(normalizedUrl);
       this.persistAccessHistory();
-      console.debug(
+      logger.debug(
         `[TabManager] Cleared access history for manually closed tab: ${normalizedUrl}`,
       );
     }
@@ -231,7 +232,7 @@ export class TabManager {
     const excludedPatterns = (result[storageKeys.excludedPatterns] ||
       []) as string[];
 
-    console.debug(
+    logger.debug(
       `[TabManager] Cleaning up inactive tabs with base timeout ${result[storageKeys.timeoutMinutes]}m, smartTimeout=${smartTimeoutEnabled}`,
     );
     const now = Date.now();
@@ -239,42 +240,42 @@ export class TabManager {
     const allTabs = await this.chromeApi.tabs.query({});
 
     for (const tab of allTabs) {
-      console.debug("Checking Tab:", tab.url);
+      logger.debug("Checking Tab:", tab.url);
       if (tab.pinned) {
-        console.debug("Tab is pinned, skipping");
+        logger.debug("Tab is pinned, skipping");
         continue;
       }
 
       if (tab.active) {
-        console.debug("Tab is active, skipping");
+        logger.debug("Tab is active, skipping");
         continue;
       }
 
       if (tab.audible) {
-        console.debug("Tab is playing audio, skipping");
+        logger.debug("Tab is playing audio, skipping");
         continue;
       }
 
       const tabId = tab.id;
       if (!tabId) {
-        console.debug("Tab has no id, skipping");
+        logger.debug("Tab has no id, skipping");
         continue;
       }
 
       if (this.lockedTabs.has(tabId)) {
-        console.debug("Tab is locked, skipping");
+        logger.debug("Tab is locked, skipping");
         continue;
       }
 
       if (isUrlExcluded(tab.url, excludedPatterns)) {
-        console.debug("Tab URL matches excluded pattern, skipping");
+        logger.debug("Tab URL matches excluded pattern, skipping");
         continue;
       }
 
       const lastAccessedMs =
         tab.lastAccessed || this.lastAccessedMsById.get(tabId);
       if (lastAccessedMs === undefined) {
-        console.debug("Tab has no last accessed time. Updating...");
+        logger.debug("Tab has no last accessed time. Updating...");
         this.updateLastAccessed(tabId);
         continue;
       }
@@ -285,7 +286,7 @@ export class TabManager {
 
       const minutesSinceLastAccessed = (now - lastAccessedMs) / 60000;
       const effectiveTimeoutMinutes = effectiveTimeoutMs / 60000;
-      console.debug(
+      logger.debug(
         `Tab ${tabId} has been inactive for ${minutesSinceLastAccessed.toFixed(1)}m (effective timeout: ${effectiveTimeoutMinutes.toFixed(1)}m)`,
       );
 

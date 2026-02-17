@@ -4,6 +4,7 @@ import {
   isKnownMessage,
   storageKeys,
 } from "./lib/chrome";
+import { logger } from "./lib/logger";
 import { TabManager } from "./lib/tabManager";
 
 const TAB_CLEANUP_ALARM_NAME = "tabCleanupAlarm";
@@ -13,14 +14,14 @@ tabManager.restoreLockedTabs();
 
 function createAutoCloseAlarm() {
   chrome.alarms.clear(TAB_CLEANUP_ALARM_NAME);
-  console.debug("Creating auto close alarm");
+  logger.debug("Creating auto close alarm");
   chrome.alarms.create(TAB_CLEANUP_ALARM_NAME, {
     periodInMinutes: 1,
   });
 }
 
 function cancelAutoCloseAlarm() {
-  console.debug("Cancelling auto close alarm");
+  logger.debug("Cancelling auto close alarm");
   chrome.alarms.clear(TAB_CLEANUP_ALARM_NAME);
 }
 
@@ -37,7 +38,7 @@ setupAutoCloseAlarm();
 
 chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
   if (alarm.name === TAB_CLEANUP_ALARM_NAME) {
-    console.debug("Tab cleanup alarm triggered");
+    logger.debug("Tab cleanup alarm triggered");
     tabManager.cleanupInactiveTabs();
   }
 });
@@ -57,7 +58,7 @@ chrome.storage.local.onChanged.addListener((changes) => {
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const { tabId } = activeInfo;
-  console.debug("Tab activated:", tabId);
+  logger.debug("Tab activated:", tabId);
   tabManager.updateLastAccessed(tabId);
 
   const tab = await chrome.tabs.get(tabId);
@@ -65,7 +66,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 chrome.tabs.onCreated.addListener(async (tab) => {
-  console.debug("Tab created:", tab.id);
+  logger.debug("Tab created:", tab.id);
   if (tab.id === undefined) {
     return;
   }
@@ -78,10 +79,10 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!isKnownMessage(message)) {
-    console.error("Unknown message:", message);
+    logger.error("Unknown message:", message);
     return;
   }
-  console.debug("Received message:", message);
+  logger.debug("Received message:", message);
 
   if (message.kind === "closeAllTabs") {
     tabManager.closeAllTabs();
